@@ -812,7 +812,7 @@ class MusicXml:
             'vivace':168, 'adagio':59, 'vivo':180, 'lento':62, 'presto':192, 'larghetto':66, 'allegrissimo':208, 'adagietto':76,
             'vivacissimo':220, 'andante':88, 'prestissimo':240, 'andantino':96}
     wedgeMap = {'>(':1, '>)':1, '<(':1,'<)':1,'crescendo(':1,'crescendo)':1,'diminuendo(':1,'diminuendo)':1}
-    artMap = {'.':'staccato','>':'accent','accent':'accent','wedge':'staccatissimo','tenuto':'tenuto',
+    artMap = {'.':'staccato','>':'accent','accent':'accent','tenuto':'tenuto',
               'breath':'breath-mark','marcato':'strong-accent','^':'strong-accent','slide':'scoop'}
     ornMap = {'trill':'trill-mark','T':'trill-mark','turn':'turn','uppermordent':'inverted-mordent','lowermordent':'mordent',
               'pralltriller':'inverted-mordent','mordent':'mordent','turn':'turn','invertedturn':'inverted-turn'}
