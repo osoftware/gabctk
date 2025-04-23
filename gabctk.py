@@ -30,7 +30,7 @@ sys.setrecursionlimit(100000)
 
 TITRE = "Cantus"
 H_LA = 57  # Le nombre correspond au "pitch" MIDI.
-TEMPO = 165
+TEMPO = 100
 DUREE_EPISEME = 1.7
 DUREE_AVANT_QUILISMA = 2
 DUREE_POINT = 2.3
@@ -152,7 +152,7 @@ def traiter_options(arguments):  # pylint:disable=R0912
         '-b', '--tab', nargs='?', help='Sortie tablature'
     )
     args.add_argument(
-        '-t', '--tempo', nargs=1, type=int, help='Tempo en notes par minute',
+        '-t', '--tempo', nargs='?', type=int, help='Tempo en notes par minute',
         default=TEMPO
     )
     args.add_argument(
@@ -160,7 +160,7 @@ def traiter_options(arguments):  # pylint:disable=R0912
         help='Transposition en demi-tons'
     )
     args.add_argument(
-        '-n', '--titre', nargs=1, help='Titre de la pièce',
+        '-n', '--titre', nargs='?', help='Titre de la pièce',
     )
     args.add_argument(
         '-a', '--alerter', nargs='*', help='Caractères à signaler'
@@ -206,7 +206,7 @@ def sortie_verbeuse(debug, gabc, partition):
 def gabctk(entree, opts):
     """Export dans les différents formats"""
     transposition = opts.transposition[0] if opts.transposition else None
-    tempo = opts.tempo if opts.tempo is int else TEMPO
+    tempo = opts.tempo if isinstance(opts.tempo, int) else TEMPO
     alertes = False
     # Extraire le contenu du gabc.
     try:
@@ -423,7 +423,7 @@ class Gabc:
         return partition
 
 
-class Partition(list):
+class Partition(list["Mot"]):
     """Partition de musique.
 
     Une partition est un texte orné de musique. Elle contient donc des mots,
@@ -532,7 +532,7 @@ class ObjetLie:  # pylint:disable=R0903
             self.precedent.suivant = self
 
 
-class Mot(ObjetLie, list):
+class Mot(ObjetLie, list["Syllabe"]):
     """Ensemble de syllabes
 
     Cet objet peut être défini à partir:
@@ -699,7 +699,7 @@ class Syllabe(ObjetLie):
         return self.neume
 
 
-class Neume(list):
+class Neume(list["Signe"]):
     """Ensemble de signes musicaux"""
     def __init__(
             self, gabc=None, syllabe=None, alterations=None, *args, **params
@@ -893,25 +893,17 @@ class Barre(Signe):
             self.precedent.fermer_element()
         except AttributeError:
             pass
-        self.poser_note_precedente()
-
-    def poser(self, pose):
-        """Ignorer le posé venant de la barre suivante"""
-        pass
-
-    def poser_note_precedente(self):
-        """Augmente la durée de la note précédente"""
-        pose = {
-            "`": 0,
-            ",": 0,
+        self.duree = {
+            "`": 0.25,
+            ",": 0.25,
             ";": 0.5,
             ":": 1,
             "::": 1.2,
         }[self.gabc]
-        try:
-            self.precedent.poser(pose)
-        except AttributeError:
-            self.neume.syllabe.mot.precedent[-1].neume[-1].poser(pose)
+
+    def poser(self, pose):
+        """Ignorer le posé venant de la barre suivante"""
+        pass
 
     @property
     def ly(self):
@@ -1416,7 +1408,7 @@ class Midi:
         # Définition des paramètres MIDI.
         piste = 0
         temps = 0
-        self.tempo = tempo / 2
+        self.tempo = tempo
         self.sortiemidi = MIDIFile(1, file_format=1)
         # Nom de la piste.
         self.sortiemidi.addTrackName(piste, temps, sansaccents(titre))
@@ -1426,40 +1418,40 @@ class Midi:
         self.sortiemidi.addProgramChange(piste, 0, temps, 74)
         self.traiter_partition(partition, piste, temps)
 
-    def traiter_partition(self, partition, piste, temps):
+    def traiter_partition(self, partition: Partition, piste, temps):
         """Création des évènements MIDI"""
         transposition = partition.transposition
         channel = 0
         volume = 127
-        for mot in partition:
+        for mot in partition: # words
             for i, syllabe in enumerate(mot):
                 syl = str(syllabe)
                 if i + 1 < len(mot):
                     syl = syl + '-'
-                for j, note in enumerate(
-                        notes for notes in syllabe.musique
-                        if isinstance(notes, Note)
-                ):
-                    pitch = note.hauteur + transposition
-                    duree = int(note.duree)
-                    self.sortiemidi.addTempo(
-                        piste, temps, (self.tempo * duree / note.duree)
-                    )
-                    self.sortiemidi.addNote(
-                        piste,
-                        channel,
-                        pitch,
-                        temps,
-                        duree / 2,
-                        volume
-                    )
-                    if j == 0:
-                        self.sortiemidi.addText(
-                            piste,
-                            temps,
-                            syl
-                        )
-                    temps += duree / 2
+                for j, note in enumerate(syllabe.musique):
+                    match note:
+                        case Note(): 
+                            pitch = note.hauteur + transposition
+                            duree = note.duree
+                            self.sortiemidi.addNote(
+                                piste,
+                                channel,
+                                pitch,
+                                temps,
+                                duree,
+                                volume
+                            )
+                            if j == 0:
+                                self.sortiemidi.addText(
+                                    piste,
+                                    temps,
+                                    syl
+                                )
+                            temps += note.duree
+                        case Barre():
+                            temps += note.duree
+
+
 
     def ecrire(self, chemin):
         """Écriture effective du fichier MIDI"""
