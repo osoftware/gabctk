@@ -274,8 +274,8 @@ class Text(GenericEvent):
     evtname = 'Text'
     sec_sort_order = 1
 
-    def __init__(self, tick, text, insertion_order=0):
-        self.text = text.encode("ISO-8859-1")
+    def __init__(self, tick, text: str, insertion_order=0):
+        self.text = text.encode("utf-8")
         super(Text, self).__init__(tick, insertion_order)
 
     def serialize(self, previous_event_tick):
@@ -285,6 +285,36 @@ class Text(GenericEvent):
         midibytes = b""
         code = 0xFF
         subcode = 0x01
+        varTime = writeVarLength(self.tick - previous_event_tick)
+        for timeByte in varTime:
+            midibytes += struct.pack('>B', timeByte)
+        midibytes += struct.pack('>B', code)
+        midibytes += struct.pack('>B', subcode)
+        payloadLength = len(self.text)
+        payloadLengthVar = writeVarLength(payloadLength)
+        for i in payloadLengthVar:
+            midibytes += struct.pack("B", i)
+        midibytes += self.text
+        return midibytes
+    
+class Lyric(GenericEvent):
+    '''
+    A class that encapsulates a text event
+    '''
+    evtname = 'Text'
+    sec_sort_order = 4
+
+    def __init__(self, tick, text: str, insertion_order=0):
+        self.text = text.encode("utf-8")
+        super(Lyric, self).__init__(tick, insertion_order)
+
+    def serialize(self, previous_event_tick):
+        """Return a bytestring representation of the event, in the format required for
+        writing into a standard midi file.
+        """
+        midibytes = b""
+        code = 0xFF
+        subcode = 0x05
         varTime = writeVarLength(self.tick - previous_event_tick)
         for timeByte in varTime:
             midibytes += struct.pack('>B', timeByte)
@@ -757,6 +787,13 @@ class MIDITrack(object):
         Add a text event
         '''
         self.eventList.append(Text(tick, text,
+                              insertion_order=insertion_order))
+
+    def addLyric(self, tick, text, insertion_order=0):
+        '''
+        Add a text event
+        '''
+        self.eventList.append(Lyric(tick, text,
                               insertion_order=insertion_order))
 
     def changeNoteTuning(self, tunings, sysExChannel=0x7F, realTime=True,
@@ -1266,6 +1303,22 @@ class MIDIFile(object):
         if self.header.numeric_format == 1:
             track += 1
         self.tracks[track].addText(self.time_to_ticks(time), text,
+                                   insertion_order=self.event_counter)
+        self.event_counter += 1
+
+
+    def addLyric(self, track, time, text):
+        """
+
+        Add a text event
+
+        :param track: The track to which the notice is added.
+        :param time: The time (in beats) at which text event is placed.
+        :param text: The text to adde [ASCII String]
+        """
+        if self.header.numeric_format == 1:
+            track += 1
+        self.tracks[track].addLyric(self.time_to_ticks(time), text,
                                    insertion_order=self.event_counter)
         self.event_counter += 1
 
