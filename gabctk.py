@@ -223,7 +223,7 @@ def gabctk(entree, opts):
     sortie_verbeuse(opts.verbose, gabc, partition)
     # Créer le fichier midi.
     if opts.midi:
-        midi = Midi(partition, titre=titre, tempo=tempo)
+        midi = Midi(partition, titre=titre, tempo=tempo, meta=gabc.entetes)
         midi.ecrire(FichierTexte(opts.midi, nom, ".mid").chemin)
     # Créer le fichier lilypond
     if opts.lily:
@@ -1437,7 +1437,7 @@ class MusicXML(Abc):
 class Midi:
     """Musique midi"""
 
-    def __init__(self, partition, titre, tempo):
+    def __init__(self, partition: Partition, titre, tempo, meta: dict):
         # Définition des paramètres MIDI.
         piste = 0
         temps = 0
@@ -1445,6 +1445,8 @@ class Midi:
         self.sortiemidi = MIDIFile(1, file_format=1)
         # Nom de la piste.
         self.sortiemidi.addTrackName(piste, temps, sansaccents(titre))
+        if 'mode' in meta:
+            self.sortiemidi.addText(0, 0, f"mode:{meta['mode']}")
         # Tempo.
         self.sortiemidi.addTempo(piste, temps, self.tempo)
         # Instrument (74 : flûte).
