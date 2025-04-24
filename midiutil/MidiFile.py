@@ -301,7 +301,7 @@ class Lyric(GenericEvent):
     '''
     A class that encapsulates a text event
     '''
-    evtname = 'Text'
+    evtname = 'Lyric'
     sec_sort_order = 4
 
     def __init__(self, tick, text: str, insertion_order=0):
@@ -838,6 +838,7 @@ class MIDITrack(object):
         # hashable (that is, they must have a __hash__() and __eq__() function
         # defined).
 
+        x = list(set([item for item in self.eventList if self.eventList.count(item) > 1]))
         s = set(self.eventList)
         self.eventList = list(s)
         self.eventList.sort(key=sort_events)
