@@ -382,12 +382,6 @@ class Gabc:
             nme.replace("(", "").replace(")", "") for nme in neume.findall(contenu)
         ]
         partition = Partition(self.entetes["name"], transposition=transposition)
-        reprise = re.compile(r"<i>.*i*j\..*</i>")
-        for i, syllabe in enumerate(syllabes):
-            rep = reprise.search(syllabe)
-            if rep:
-                syllabes[i - 2] += " " + rep.group(0)
-                syllabes[i] = reprise.sub("", syllabe)
         # Extraction des différents signes
         mot = []
         for txt, nme in zip(syllabes, neumes):
