@@ -1213,7 +1213,10 @@ class Note(Signe):
         # correspondant à une lettre dépend de la clé.
         # N.B : c1, f1 et f2 n'existent pas normalement, mais cela ne
         # nous regarde pas !
-        cle = self.neume.syllabe.mot.cle.gabc
+        try:
+            cle = self.neume.syllabe.mot.cle.gabc
+        except AttributeError:
+            cle = "c4"
         alterations = {chr(lettre): 0 for lettre in range(ord("a"), ord("p") + 1)}
         try:
             alterations = self.alterations if self.alterations else alterations
