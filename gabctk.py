@@ -880,9 +880,9 @@ class Barre(Signe):
         self.duree = {
             "`": 0.25,
             ",": 0.25,
-            ";": 0.5,
-            ":": 1,
-            "::": 1.2,
+            ";": 1,
+            ":": 2,
+            "::": 2,
         }[self.gabc]
 
     def poser(self, pose):
